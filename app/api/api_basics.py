@@ -403,10 +403,9 @@ class ApiBasics(HaivenBaseApi):
                 if prompt_data.promptid:
                     prompt_obj = prompts.get(prompt_data.promptid)
                     if prompt_obj and prompt_obj.metadata.get("grounded", True):
-                        perplexity_model_config = ModelConfig(
-                            "perplexity", "perplexity", "Perplexity"
+                        selected_model_config = self.config_service.get_model(
+                            "perplexity"
                         )
-                        selected_model_config = perplexity_model_config
 
                 prompt = rendered_prompt
                 session_id = prompt_data.chatSessionId

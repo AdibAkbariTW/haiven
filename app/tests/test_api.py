@@ -1232,6 +1232,9 @@ class TestApi(unittest.TestCase):
         perplexity_model_config = MagicMock()
         perplexity_model_config.provider = "perplexity"
 
+        mock_config_service = MagicMock()
+        mock_config_service.get_model.return_value = perplexity_model_config
+
         # Create the API with our mocks
         ApiBasics(
             self.app,
@@ -1241,7 +1244,7 @@ class TestApi(unittest.TestCase):
             prompts_chat=mock_prompt_list,
             prompts_guided=mock_prompt_list,
             knowledge_manager=MagicMock(),
-            config_service=MagicMock(),
+            config_service=mock_config_service,
             disclaimer_and_guidelines=MagicMock(),
             inspirations_manager=MagicMock(),
         )
@@ -1261,7 +1264,7 @@ class TestApi(unittest.TestCase):
         self.assertIn("some response from the model", streamed_content)
         self.check_token_usage_in_streamed_content(streamed_content)
 
-        expected_model_config = ModelConfig("perplexity", "perplexity", "Perplexity")
+        expected_model_config = perplexity_model_config
 
         # Verify that streaming_chat was called with the Perplexity model config
         # and not the default config
@@ -1270,6 +1273,7 @@ class TestApi(unittest.TestCase):
             "model_config"
         ]
         self.assertEqual(actual_model_config.provider, expected_model_config.provider)
+        mock_config_service.get_model.assert_called_once_with("perplexity")
 
     def test_download_restricted_prompt_returns_403(self):
         """Test that downloading a restricted prompt returns 403 Forbidden"""

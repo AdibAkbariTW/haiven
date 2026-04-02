@@ -1,7 +1,6 @@
 # © 2024 Thoughtworks, Inc. | Licensed under the Apache License, Version 2.0  | See LICENSE.md file for permissions.
 from fastapi import Request
 from api.api_basics import HaivenBaseApi
-from llms.model_config import ModelConfig
 from logger import HaivenLogger
 
 CONFIG_TO_PROMPT_MAPPING = {
@@ -11,8 +10,9 @@ CONFIG_TO_PROMPT_MAPPING = {
 
 
 class ApiCompanyResearch(HaivenBaseApi):
-    def __init__(self, app, chat_session_memory, model_key, prompt_list):
+    def __init__(self, app, chat_session_memory, model_key, prompt_list, config_service):
         super().__init__(app, chat_session_memory, model_key, prompt_list)
+        self.config_service = config_service
 
         @app.post("/api/research")
         async def company_research(request: Request):
@@ -35,9 +35,7 @@ class ApiCompanyResearch(HaivenBaseApi):
                 user_input=user_input,
             )
 
-            perplexity_model_config = ModelConfig(
-                "perplexity", "perplexity", "Perplexity"
-            )
+            perplexity_model_config = self.config_service.get_model("perplexity")
 
             return self.stream_json_chat(
                 prompt,
