@@ -1,9 +1,10 @@
 # © 2024 Thoughtworks, Inc. | Licensed under the Apache License, Version 2.0  | See LICENSE.md file for permissions.
+import os
+import re
+
 from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.responses import PlainTextResponse
-import os
 import frontmatter
-import re
 from logger import HaivenLogger
 from loguru import logger
 from config_service import ConfigService
@@ -158,14 +159,7 @@ class ApiRules:
                         },
                     )
 
-                    # Provide a helpful error message with available rules
-                    available_rules = list(self.loaded_rules.keys())
-                    if available_rules:
-                        error_msg = f"Rule '{rule_id}' not found. Available rules: {', '.join(available_rules)}"
-                    else:
-                        error_msg = f"Rule '{rule_id}' not found. No rules are currently loaded."
-
-                    raise HTTPException(status_code=404, detail=error_msg)
+                    raise HTTPException(status_code=404, detail="Rule not found")
 
             except HTTPException:
                 raise

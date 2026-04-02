@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import hashlib
 
 from auth.api_key_auth_service import ApiKeyAuthService
@@ -11,12 +11,21 @@ from config_service import ConfigService
 
 
 class GenerateApiKeyRequest(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
     expires_days: int | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name_whitespace(cls, v):
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
 
 class RevokeApiKeyRequest(BaseModel):
-    key_hash: str
+    key_hash: str = Field(
+        min_length=64, max_length=64, pattern=r"^[a-fA-F0-9]{64}$"
+    )
 
 
 class ApiKeyManagementAPI:

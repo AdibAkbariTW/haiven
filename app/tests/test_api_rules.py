@@ -64,7 +64,7 @@ class TestApiRules(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         response_data = response.json()
-        self.assertIn("Rule 'invalid' not found", response_data["detail"])
+        self.assertEqual(response_data["detail"], "Rule not found")
 
     def test_get_casper_rule_file_not_found(self):
         """Test when casper rule file doesn't exist"""
@@ -73,7 +73,7 @@ class TestApiRules(unittest.TestCase):
 
             self.assertEqual(response.status_code, 404)
             response_data = response.json()
-            self.assertIn("Rule 'casper' not found", response_data["detail"])
+            self.assertEqual(response_data["detail"], "Rule not found")
 
     def test_get_casper_rule_file_read_error(self):
         """Test when there's an error reading the casper rule file"""
@@ -84,7 +84,7 @@ class TestApiRules(unittest.TestCase):
 
                     self.assertEqual(response.status_code, 404)
                     response_data = response.json()
-                    self.assertIn("Rule 'casper' not found", response_data["detail"])
+                    self.assertEqual(response_data["detail"], "Rule not found")
 
     def test_config_service_integration(self):
         """Test that config service is properly used to get knowledge pack path"""
@@ -146,7 +146,7 @@ class TestApiRules(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         response_data = response.json()
-        self.assertIn("Rule 'other_rule' not found", response_data["detail"])
+        self.assertEqual(response_data["detail"], "Rule not found")
 
     def test_get_rule_missing_id_parameter(self):
         """Test request without id parameter"""
@@ -241,10 +241,7 @@ class TestApiRules(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         response_data = response.json()
-        self.assertIn("Rule 'nonexistent' not found", response_data["detail"])
-        self.assertIn("Available rules:", response_data["detail"])
-        self.assertIn("available1", response_data["detail"])
-        self.assertIn("available2", response_data["detail"])
+        self.assertEqual(response_data["detail"], "Rule not found")
 
     def test_rule_not_found_no_rules_loaded(self):
         """Test rule not found error when no rules are loaded"""
@@ -254,8 +251,7 @@ class TestApiRules(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
         response_data = response.json()
-        self.assertIn("Rule 'nonexistent' not found", response_data["detail"])
-        self.assertIn("No rules are currently loaded", response_data["detail"])
+        self.assertEqual(response_data["detail"], "Rule not found")
 
     def test_auth_util_methods(self):
         """Test that auth utility methods work correctly"""

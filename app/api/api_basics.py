@@ -1,9 +1,11 @@
 # © 2024 Thoughtworks, Inc. | Licensed under the Apache License, Version 2.0  | See LICENSE.md file for permissions.
 import io
+import json
+import re
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, Request
+
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
-from fastapi import File, Form, UploadFile
 from PIL import Image
 
 from pydantic import BaseModel
@@ -12,14 +14,13 @@ from knowledge_manager import KnowledgeManager
 from llms.chats import ChatManager, ChatOptions, StreamingChat
 from llms.model_config import ModelConfig
 from llms.image_description_service import ImageDescriptionService
-from prompts.prompts import PromptList
+from prompts.prompts import PromptList, filter_downloadable_prompts
 from prompts.inspirations import InspirationsManager
 
 from config_service import ConfigService
 from disclaimer_and_guidelines import DisclaimerAndGuidelinesService
 from logger import HaivenLogger
 from loguru import logger
-import json
 from auth import auth_util
 
 
@@ -557,8 +558,6 @@ class ApiBasics(HaivenBaseApi):
         def download_prompt(
             request: Request, prompt_id: str = None, category: str = None
         ):
-            import re
-
             def is_valid_param(val):
                 return bool(val) and re.match(r"^[a-zA-Z0-9_-]{1,100}$", val)
 
@@ -612,8 +611,6 @@ class ApiBasics(HaivenBaseApi):
                     )
 
                     # Filter out restricted prompts
-                    from prompts.prompts import filter_downloadable_prompts
-
                     downloadable_prompts = filter_downloadable_prompts(prompts)
 
                     for prompt in downloadable_prompts:
@@ -635,8 +632,6 @@ class ApiBasics(HaivenBaseApi):
                     )
 
                     # Filter out restricted prompts
-                    from prompts.prompts import filter_downloadable_prompts
-
                     downloadable_prompts = filter_downloadable_prompts(prompts)
 
                     for prompt in downloadable_prompts:
