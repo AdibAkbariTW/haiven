@@ -1,5 +1,6 @@
 # © 2024 Thoughtworks, Inc. | Licensed under the Apache License, Version 2.0  | See LICENSE.md file for permissions.
 import os
+import re
 from typing import List
 from dataclasses import dataclass
 
@@ -59,6 +60,30 @@ class KnowledgeBaseMarkdown:
         """
         return self._knowledge
 
+    _INJECTION_PATTERNS = re.compile(
+        r"^\s*(ignore\s|disregard\s|you are now\s|forget\s|override\s|system:\s|assistant:\s|user:\s)",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    _EXCESSIVE_SPECIAL_CHARS = re.compile(r"[^\w\s.,;:!?'\"\-()\[\]{}/\\@#%&*+=<>|~`]{3,}")
+
+    def _sanitise_user_context(self, user_context: str) -> str:
+        """
+        Strip prompt-injection patterns from user-supplied context before it is
+        included in the LLM system prompt.
+        """
+        if not user_context:
+            return user_context
+
+        lines = user_context.splitlines()
+        sanitised_lines = []
+        for line in lines:
+            if self._INJECTION_PATTERNS.match(line):
+                continue
+            line = self._EXCESSIVE_SPECIAL_CHARS.sub("", line)
+            sanitised_lines.append(line)
+
+        return "\n".join(sanitised_lines)
+
     def aggregate_all_contexts(
         self, contexts: List[str], user_context: str = None
     ) -> str:
@@ -71,6 +96,7 @@ class KnowledgeBaseMarkdown:
                 self._knowledge[context_key].content for context_key in contexts
             )
 
+        sanitised_user_context = self._sanitise_user_context(user_context)
         return "\n\n".join(
-            filter(None, [knowledgePackContextsAggregated, user_context])
+            filter(None, [knowledgePackContextsAggregated, sanitised_user_context])
         )
