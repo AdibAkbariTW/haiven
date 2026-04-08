@@ -1,0 +1,244 @@
+codebase:
+  name: "Haiven"
+  vision: "AI team assistant platform for software delivery teams, providing LLM-powered tools via a FastAPI backend, CLI, and React frontend"
+  stack:
+    languages:
+      - name: Python
+        current_version: "3.12"
+        target_version: "3.12"
+      - name: JavaScript
+        current_version: "22.22.2"
+        target_version: "22.x"
+    frameworks:
+      - name: FastAPI
+        current_version: "0.131.0"
+        target_version: ""
+      - name: React
+        current_version: "19.2.4"
+        target_version: ""
+      - name: Next.js
+        current_version: "16.1.6"
+        target_version: ""
+      - name: LangChain
+        current_version: "1.2.10"
+        target_version: ""
+      - name: pytest
+        current_version: "9.x"
+        target_version: ""
+      - name: vitest
+        current_version: ""
+        target_version: ""
+    docs:
+      - name: README.md
+        sections:
+          - overview
+          - getting started
+          - running the app
+          - running tests
+          - deployment
+      - name: CONTRIBUTING.md
+      - name: AGENT.md
+        sections:
+          - backend conventions
+          - frontend conventions
+      - name: docs/DEVELOPER_GUIDELINES.md
+      - name: docs/architecture.md
+    references:
+      - "./AGENT.md"
+      - "./docs/DEVELOPER_GUIDELINES.md"
+
+zones:
+  - name: "app-api"
+    description: "FastAPI REST endpoints and authentication/authorization layer"
+    technologies: "Python 3.12, FastAPI, Starlette, API key auth, OAuth"
+    paths:
+      - app/api/**
+      - app/auth/**
+    allowed_practices:
+      - separate handler modules per feature area
+      - constructor dependency injection
+      - API key and OAuth authentication
+    forbidden_practices:
+      - business logic inside route handlers
+      - hardcoded credentials or secrets
+      - initialising dependencies inside classes
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 80%
+      okay_to_ignore_rules_when:
+        - "file is imperative config like routes registration"
+
+  - name: "app-core"
+    description: "Application entry points, configuration services, and shared resources"
+    technologies: "Python 3.12, FastAPI, python-dotenv, YAML config"
+    paths:
+      - app/*.py
+      - app/*.yaml
+      - app/config/**
+      - app/resources/**
+    allowed_practices:
+      - constructor dependency injection
+      - environment-based configuration
+      - YAML-driven feature flags
+    forbidden_practices:
+      - hardcoded environment-specific values
+      - initialising dependencies inside classes
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 70%
+      okay_to_ignore_rules_when:
+        - "file is imperative application wiring (app.py, main.py)"
+
+  - name: "app-llm"
+    description: "LLM client wrappers, chat abstractions, and model configuration"
+    technologies: "Python 3.12, LangChain, LiteLLM, OpenAI, AWS Bedrock, Google Vertex AI, ollama"
+    paths:
+      - app/llms/**
+    allowed_practices:
+      - constructor dependency injection
+      - adapter pattern for LLM providers
+      - streaming chat event handling
+    forbidden_practices:
+      - direct provider SDK calls outside of client wrappers
+      - hardcoded model names or API keys
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 75%
+
+  - name: "app-knowledge"
+    description: "Knowledge pack management, document embeddings, vector search, and prompt handling"
+    technologies: "Python 3.12, LangChain, FAISS, pypdf, python-frontmatter"
+    paths:
+      - app/knowledge/**
+      - app/embeddings/**
+      - app/prompts/**
+    allowed_practices:
+      - constructor dependency injection
+      - vector similarity search
+      - markdown-based prompt templates with frontmatter
+    forbidden_practices:
+      - loading knowledge documents synchronously at request time
+      - storing raw user content without sanitisation
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 75%
+
+  - name: "app-tests"
+    description: "Backend unit and integration tests"
+    technologies: "Python 3.12, pytest, pytest-mock"
+    paths:
+      - app/tests/**
+    allowed_practices:
+      - pytest fixtures for dependency injection
+      - mocking external LLM providers
+      - marking slow/integration tests with pytest markers
+    forbidden_practices:
+      - tests with real external API calls (unless marked integration)
+      - shared mutable state between tests
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 0%
+      okay_to_ignore_rules_when:
+        - "test files legitimately require more lines for coverage"
+
+  - name: "cli"
+    description: "Haiven CLI tool (haiven-cli) for knowledge pack management and embeddings"
+    technologies: "Python 3.12, Typer, LangChain, FAISS, pytest"
+    paths:
+      - cli/**
+    allowed_practices:
+      - constructor dependency injection
+      - Typer commands with clear help text
+      - unit tests for all CLI commands
+    forbidden_practices:
+      - business logic inside CLI command functions
+      - hardcoded file paths or credentials
+      - initialising dependencies inside classes
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 75%
+
+  - name: "ui-components"
+    description: "React/Next.js frontend components, hooks, pages, and styles (client-only mode)"
+    technologies: "JavaScript, React 19, Next.js 16 (client-only), Ant Design, Tailwind CSS, remix icons"
+    paths:
+      - ui/src/app/**
+      - ui/src/hooks/**
+      - ui/src/pages/**
+      - ui/src/styles/**
+    allowed_practices:
+      - functional React components
+      - React hooks for state management
+      - Ant Design and antd-style for UI components
+      - remix icons for all icons
+      - prettier formatting
+      - file naming convention _name_of_component.js
+    forbidden_practices:
+      - class-based components
+      - server-side Next.js features (SSR, SSG, API routes)
+      - JSDocs comments
+      - innerHTML combined with useRef (use React state instead)
+      - inline CSS styles
+      - non-remix icon libraries
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 70%
+
+  - name: "ui-tests"
+    description: "Frontend unit and component tests using vitest and Testing Library"
+    technologies: "JavaScript, vitest, @testing-library/react, jsdom"
+    paths:
+      - ui/src/__tests__/**
+    allowed_practices:
+      - Testing Library queries (getByRole, getByText, etc.)
+      - mocking API calls and SSE streams
+    forbidden_practices:
+      - snapshot tests without meaningful assertions
+      - testing implementation details
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 0%
+
+  - name: "e2e"
+    description: "End-to-end tests using Playwright"
+    technologies: "TypeScript, Playwright"
+    paths:
+      - tests/**
+    allowed_practices:
+      - page object model
+      - testing full user journeys
+    forbidden_practices:
+      - testing implementation details
+      - flaky waits (use Playwright waitFor patterns instead)
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 0%
+
+  - name: "devscripts"
+    description: "Build, dev, and automation scripts for the monorepo"
+    technologies: "Python 3.12, Typer, poetry"
+    paths:
+      - devscripts/**
+    allowed_practices:
+      - Typer commands for build tasks
+      - shell-out to poetry/yarn for sub-project tasks
+    forbidden_practices:
+      - hardcoded absolute paths
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 0%
+
+  - name: "ci"
+    description: "GitHub Actions CI/CD workflows"
+    technologies: "GitHub Actions, YAML"
+    paths:
+      - .github/**
+    allowed_practices:
+      - reusable workflow steps
+      - pinned action versions
+    forbidden_practices:
+      - hardcoded secrets in workflow files
+      - unpinned third-party actions
+    rules:
+      max_file_lines: 300
+      target_test_coverage: 0%

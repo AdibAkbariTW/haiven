@@ -1,0 +1,12 @@
+# Civic configuration
+
+max-worker-agents = 15  # Maximum number of concurrent worker agents
+allowed-open-pr = 5     # Maximum number of open pull requests at any time
+
+# Feature toggles - control which areas of the codebase civic will work on
+[toggles]
+docs = true                   # should civic tidy up and improve project documentation
+refactoring = true            # should civic attempt to identify and deliver incremental refactoring tasks
+upgrades = false              # should civic attempt to plan and deliver upgrades to more recent versions
+style_and_linting = true      # should civic attempt to bring files in line with provided style guides
+add_end_to_end_tests = false  # should civic attempt to identify missing end to end tests and implement them

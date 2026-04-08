@@ -235,7 +235,86 @@ knowledge_pack_path: /non/existent/path
 
         os.remove(get_test_data_path() + "/" + config_path)
 
-    def test_api_key_repository_config_validation(self):
+    def test_get_default_chat_model_returns_configured_value(self):
+        # When default_models.chat is set in config, it should be returned directly
+        config_service = ConfigService(self.config_path)
+        chat_model = config_service.get_default_chat_model()
+        assert chat_model == self.model_id
+
+    def test_get_default_chat_model_falls_back_to_first_enabled_model(self):
+        # When default_models.chat is empty, fall back to first text-generation model
+        config_content = f"""
+knowledge_pack_path: {self.knowledge_pack_path}
+enabled_providers: {self.provider}
+default_models:
+  chat:
+  vision: some-vision-model
+  embeddings: some-embedding
+models:
+  - id: first-text-gen-model
+    name: First Model
+    provider: {self.provider}
+    features:
+      - text-generation
+    config:
+      api_key: key
+  - id: second-text-gen-model
+    name: Second Model
+    provider: {self.provider}
+    features:
+      - text-generation
+    config:
+      api_key: key
+embeddings:
+  - id: some-embedding
+    name: Embed
+    provider: {self.provider}
+    config:
+      api_key: key
+"""
+        config_path = "test-fallback-config.yaml"
+        with open(config_path, "w") as f:
+            f.write(config_content)
+        try:
+            config_service = ConfigService(config_path)
+            chat_model = config_service.get_default_chat_model()
+            assert chat_model == "first-text-gen-model"
+        finally:
+            os.remove(config_path)
+
+    def test_get_default_chat_model_returns_none_when_no_models_available(self):
+        # When default_models.chat is empty and no text-generation models exist, returns None
+        config_content = f"""
+knowledge_pack_path: {self.knowledge_pack_path}
+enabled_providers: {self.provider}
+default_models:
+  chat:
+  vision: some-vision-model
+  embeddings: some-embedding
+models:
+  - id: image-only-model
+    name: Image Model
+    provider: {self.provider}
+    features:
+      - image-to-text
+    config:
+      api_key: key
+embeddings:
+  - id: some-embedding
+    name: Embed
+    provider: {self.provider}
+    config:
+      api_key: key
+"""
+        config_path = "test-no-models-config.yaml"
+        with open(config_path, "w") as f:
+            f.write(config_content)
+        try:
+            config_service = ConfigService(config_path)
+            chat_model = config_service.get_default_chat_model()
+            assert chat_model is None
+        finally:
+            os.remove(config_path)
         import yaml
 
         # Missing pseudonymization_salt
