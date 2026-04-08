@@ -33,14 +33,15 @@ class Server:
         config_service: ConfigService,
         api_key_auth_service: ApiKeyAuthService = None,
         boba_api: BobaApi = None,
+        url: HaivenUrl = None,
+        templates: Jinja2Templates = None,
     ):
-        self.url = HaivenUrl()
+        self.url = url or HaivenUrl()
         self.chat_manager = chat_manager
         self.config_service = config_service
         self.boba_api = boba_api
         self.api_key_auth_service = api_key_auth_service
-        # Initialize Jinja2Templates with autoescape=True for XSS protection
-        self.templates = Jinja2Templates(directory="./resources/html_templates")
+        self.templates = templates or Jinja2Templates(directory="./resources/html_templates")
         self.templates.env.autoescape = True
 
     def user_endpoints(self, app):
@@ -77,32 +78,26 @@ class Server:
 
         @app.get(self.url.general())
         async def backwards_teamai(request: Request):
-            # backwards compatibility from when "/teamai" was the main entry path
             return RedirectResponse(url=self.url.analysis())
 
         @app.get(self.url.analysis())
         async def backwards_analysis(request: Request):
-            # backwards compatibility
             return RedirectResponse(url=self.url.boba())
 
         @app.get(self.url.testing())
         async def backwards_testing(request: Request):
-            # backwards compatibility
             return RedirectResponse(url=self.url.boba())
 
         @app.get(self.url.coding())
         async def backwards_coding(request: Request):
-            # backwards compatibility
             return RedirectResponse(url=self.url.boba())
 
         @app.get(self.url.about())
         async def backwards_about(request: Request):
-            # backwards compatibility
             return RedirectResponse(url=self.url.boba() + "/about")
 
         @app.get(self.url.knowledge())
         async def backwards_knowledge(request: Request):
-            # backwards compatibility
             return RedirectResponse(url=self.url.boba() + "/knowledge")
 
         @app.get(self.url.logout())
@@ -189,7 +184,6 @@ class Server:
         @app.middleware("http")
         async def check_oauth2_authentication(request: Request, call_next):
             if os.environ.get("AUTH_SWITCHED_OFF") == "true":
-                # TODO: Only allow this if localhost?
                 return await call_next(request)
             else:
                 return await check_authentication(request, call_next)
@@ -234,8 +228,7 @@ class Server:
             response = await call_next(request)
             return response
 
-        # Session lifetime is managed by the check_session_expiry middleware
-        app.add_middleware(SessionMiddleware, secret_key="!secret", max_age=None)
+        app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "!secret"), max_age=None)
 
         oauth = OAuth()
 
@@ -247,9 +240,7 @@ class Server:
             client_kwargs={"scope": "openid email profile"},
         )
 
-        origins = [
-            "http://localhost:3000",  # Allow CORS from localhost:3000
-        ]
+        origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")]
 
         app.add_middleware(
             CORSMiddleware,
