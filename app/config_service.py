@@ -4,12 +4,11 @@ import os
 from typing import List
 
 import yaml
-from dotenv import load_dotenv
 from knowledge.pack import KnowledgePackError
 from llms.model_config import ModelConfig
 from llms.default_models import DefaultModels
 from embeddings.model import EmbeddingModel
-import re
+from config.env_utils import _resolve_config_values
 
 
 class ConfigService:
@@ -19,9 +18,6 @@ class ConfigService:
     def load_embedding_model(self) -> EmbeddingModel:
         """
         Load an embedding model from a YAML config file.
-
-        Args:
-            path (str): The path to the YAML file.
 
         Returns:
             EmbeddingModel: The loaded embedding model for the given provider
@@ -191,29 +187,12 @@ class ConfigService:
         return default_models
 
     def get_default_chat_model(self) -> str:
-        """
-        Get the default chat model from the config file.
-
-        Args:
-            path (str): The path to the YAML file.
-
-        Returns:
-            str: The default chat model.
-        """
+        """Get the default chat model ID from config, falling back to the first enabled text-generation model."""
         default_chat_model = self.load_default_models().chat
-        if default_chat_model is None or default_chat_model == "":
-            enabled_provider = self.load_enabled_providers()[0]
-            match enabled_provider:
-                case "azure":
-                    default_chat_model = "azure-gpt-4o"
-                case "gcp":
-                    default_chat_model = "google-gemini"
-                case "aws":
-                    default_chat_model = "aws-claude-sonnet-3.7"
-                case "anthropic":
-                    default_chat_model = "anthropic-claude-3.7"
-                case "ollama":
-                    default_chat_model = "ollama-local-llama3"
+        if not default_chat_model:
+            enabled_models = self.load_enabled_models(features=["text-generation"])
+            if enabled_models:
+                default_chat_model = enabled_models[0].id
         return default_chat_model
 
     def load_api_key_repository_type(self) -> str:
@@ -317,46 +296,3 @@ class ConfigService:
             str: The constructed string.
         """
         return loader.construct_scalar(node)
-
-
-def _resolve_config_values(config: dict[str, str]):
-    load_dotenv()
-    for key, value in config.items():
-        if isinstance(value, dict):
-            _resolve_config_values(value)
-        elif isinstance(value, list):
-            _resolve_config_list_values(config, key, value)
-        else:
-            config[key] = _replace_by_env_var(config[key])
-            if _is_comma_separated_list(config[key]):
-                config[key] = config[key].split(",")
-
-    return config
-
-
-def _is_comma_separated_list(value: str) -> bool:
-    return isinstance(value, str) and "," in value
-
-
-def _resolve_config_list_values(config, key, value):
-    list = []
-    for i, item in enumerate(value):
-        if isinstance(item, dict):
-            list.append(_resolve_config_values(item))
-        else:
-            list.append(_replace_by_env_var(item))
-
-    config[key] = list
-
-
-def _replace_by_env_var(value):
-    if value is None:
-        return value
-
-    # Use regex to find all ${ENV_VAR} patterns and replace them with their values
-    def replace_env_var(match):
-        env_variable = match.group(1)
-        return os.environ.get(env_variable, "")
-
-    # Replace all occurrences of ${ENV_VAR} with their values
-    return re.sub(r"\${([^}]+)}", replace_env_var, value)
