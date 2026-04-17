@@ -97,14 +97,6 @@ class ApiKeyManagementAPI:
                 expires_days = (
                     body.expires_days if body.expires_days is not None else 30
                 )
-                if expires_days > 30:
-                    raise HTTPException(
-                        status_code=400, detail="API key maximum expiry is 30 days"
-                    )
-                if expires_days < 1:
-                    raise HTTPException(
-                        status_code=400, detail="API key expiry must be at least 1 day"
-                    )
                 api_key = self.api_key_service.generate_api_key(
                     name=body.name,
                     user_id=user_id,

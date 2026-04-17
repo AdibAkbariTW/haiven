@@ -15,7 +15,7 @@ from logger import HaivenLogger
 class FirestoreApiKeyRepository(ApiKeyRepository):
     """Firestore-based implementation of API key storage."""
 
-    def __init__(self, config: ConfigService):
+    def __init__(self, config: ConfigService, db=None):
         if not hasattr(config, "load_firestore_project_id"):
             raise ValueError(
                 "FirestoreApiKeyRepository requires a ConfigService (or compatible) object with Firestore configuration."
@@ -23,7 +23,7 @@ class FirestoreApiKeyRepository(ApiKeyRepository):
 
         self.project_id = config.load_firestore_project_id()
         self.collection_name = config.load_firestore_collection_name()
-        self.db = firestore.Client(project=self.project_id)
+        self.db = db if db is not None else firestore.Client(project=self.project_id)
 
         self.collection: CollectionReference = self.db.collection(self.collection_name)
 
