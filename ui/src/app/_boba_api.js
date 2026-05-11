@@ -235,6 +235,17 @@ export const revokeApiKey = async (keyHash, onSuccess, onError) => {
   onSuccess(data);
 };
 
+export const postPromptExplore = async (body) => {
+  return fetch("/api/prompt/explore", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+};
+
 export const getApiKeyUsage = async (onSuccess, onError) => {
   const response = await fetch("/api/apikeys/usage", {
     method: "GET",

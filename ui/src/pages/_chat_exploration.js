@@ -7,6 +7,7 @@ import LLMTokenUsage from "../app/_llm_token_usage";
 import { formattedUsage } from "../app/utils/tokenUtils";
 import { aggregateTokenUsage } from "../app/utils/_aggregate_token_usage";
 import { filterSSEEvents } from "../app/utils/_sse_event_filter";
+import { postPromptExplore } from "../app/_boba_api";
 
 export default function ChatExploration({
   context,
@@ -37,8 +38,6 @@ export default function ChatExploration({
   }, [context, previousContext]);
 
   const submitPromptToBackend = async (messages) => {
-    const exploreUri = "/api/prompt/explore";
-
     // Do not reset token usage here; we want to aggregate per page
 
     const processSSEResponse = (response) => {
@@ -94,21 +93,14 @@ export default function ChatExploration({
 
     if (promptStarted !== true) {
       const lastMessage = messages[messages.length - 1];
-      const response = await fetch(exploreUri, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userinput: lastMessage?.content,
-          item: previousContext?.itemSummary,
-          contexts: previousContext?.context || [],
-          userContext: previousContext?.userContext || "",
-          first_step_input: previousContext?.firstStepInput || "",
-          previous_promptid: previousContext?.previousPromptId || "",
-          previous_framing: previousContext?.previousFraming || "",
-        }),
+      const response = await postPromptExplore({
+        userinput: lastMessage?.content,
+        item: previousContext?.itemSummary,
+        contexts: previousContext?.context || [],
+        userContext: previousContext?.userContext || "",
+        first_step_input: previousContext?.firstStepInput || "",
+        previous_promptid: previousContext?.previousPromptId || "",
+        previous_framing: previousContext?.previousFraming || "",
       });
       setPromptStarted(true);
       setChatSessionId(response.headers.get("X-Chat-ID"));
@@ -116,16 +108,9 @@ export default function ChatExploration({
     } else {
       console.log("Continuing conversation...");
       const lastMessage = messages[messages.length - 1];
-      const response = await fetch(exploreUri, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userinput: lastMessage?.content,
-          chatSessionId: chatSessionId,
-        }),
+      const response = await postPromptExplore({
+        userinput: lastMessage?.content,
+        chatSessionId: chatSessionId,
       });
       return processSSEResponse(response);
     }
